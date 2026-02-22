@@ -85,9 +85,9 @@ async def get_stocks(
 
     # 정렬
     if sort == "score_desc":
-        stocks.sort(key=lambda x: x["score"], reverse=True)
+        stocks.sort(key=lambda x: x["score"])  # 낮은 점수가 먼저 (위험한 종목)
     elif sort == "score_asc":
-        stocks.sort(key=lambda x: x["score"])
+        stocks.sort(key=lambda x: x["score"], reverse=True)  # 높은 점수가 먼저
     elif sort == "name":
         stocks.sort(key=lambda x: x["name"])
     elif sort == "trend_up":

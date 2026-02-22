@@ -1,0 +1,49 @@
+/* 종목 상세 페이지 추가 스타일 */
+.detail-main { max-width: 900px; margin: 0 auto; padding: 24px 20px 60px; }
+.breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text-muted); }
+.breadcrumb a:hover { color: var(--accent); }
+
+.detail-hero {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 24px; margin-bottom: 16px; gap: 20px;
+}
+.hero-left { display: flex; align-items: center; gap: 16px; }
+.hero-emoji { font-size: 3rem; }
+.hero-title { font-size: 1.5rem; font-weight: 700; }
+.hero-code  { font-size: 0.85rem; color: var(--text-muted); font-family: monospace; }
+.hero-right { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+.hero-score { display: flex; flex-direction: column; align-items: flex-end; }
+.hero-score-num { font-size: 2.5rem; font-weight: 800; }
+.hero-score-label { font-size: 0.75rem; color: var(--text-muted); }
+.hero-actions { display: flex; gap: 8px; }
+
+.detail-stats {
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 10px; margin-bottom: 24px;
+}
+.dstat {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.dstat-val   { font-size: 1.15rem; font-weight: 700; }
+.dstat-label { font-size: 0.72rem; color: var(--text-muted); }
+
+.detail-chart-section,
+.detail-comments,
+.detail-dart {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px;
+}
+.section-title { font-size: 1rem; font-weight: 600; margin-bottom: 16px; }
+.chart-wrap { position: relative; height: 260px; }
+
+@media (max-width: 700px) {
+  .detail-hero { flex-direction: column; align-items: flex-start; }
+  .hero-right { align-items: flex-start; }
+  .detail-stats { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 440px) {
+  .detail-stats { grid-template-columns: repeat(2, 1fr); }
+}

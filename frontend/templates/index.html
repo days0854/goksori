@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="코스피200 종목 감성분석 기반 매매 시그널 - 곡소리 매매법">
+  <meta property="og:title" content="곡소리 매매법">
+  <meta property="og:description" content="네이버 종목토론방 기반 실시간 감성분석 매매 시그널">
+  <meta property="og:image" content="/static/images/og_main.png">
+  <title>곡소리 매매법 | 코스피200 감성분석</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <!-- Google AdSense -->
+  {% if adsense_client_id %}
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ adsense_client_id }}" crossorigin="anonymous"></script>
+  {% endif %}
+  <!-- Kakao SDK -->
+  {% if kakao_js_key %}
+  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
+          integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4"
+          crossorigin="anonymous"></script>
+  {% endif %}
+</head>
+<body class="dark-theme">
+
+<!-- ── 헤더 ─────────────────────────────────────────────────── -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">📢</span>
+      <span class="logo-text">곡소리 <span class="logo-accent">매매법</span></span>
+      <span class="logo-sub">KOSPI 200 감성분석</span>
+    </div>
+    <nav class="header-nav">
+      <button class="nav-btn active" data-sort="score_desc">점수순</button>
+      <button class="nav-btn" data-sort="trend_up">상승추세</button>
+      <button class="nav-btn" data-sort="trend_down">하락추세</button>
+      <button class="nav-btn" data-sort="name">이름순</button>
+    </nav>
+    <div class="header-right">
+      <div class="search-wrap">
+        <input type="text" id="searchInput" class="search-input" placeholder="종목명 / 코드 검색">
+        <span class="search-icon">🔍</span>
+      </div>
+      <div class="update-info">
+        <span class="update-dot"></span>
+        <span id="lastUpdate">업데이트 중...</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ── AdSense 상단 배너 ─────────────────────────────────────── -->
+{% if adsense_client_id %}
+<div class="ad-wrap ad-top">
+  <ins class="adsbygoogle" style="display:block" data-ad-client="{{ adsense_client_id }}"
+       data-ad-slot="1234567890" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+{% endif %}
+
+<!-- ── 요약 통계 바 ──────────────────────────────────────────── -->
+<section class="stats-bar">
+  <div class="stat-item">
+    <span class="stat-val" id="statTotal">-</span>
+    <span class="stat-label">추적 종목</span>
+  </div>
+  <div class="stat-item hot">
+    <span class="stat-val" id="statHot">-</span>
+    <span class="stat-label">🔥 급등 시그널</span>
+  </div>
+  <div class="stat-item cold">
+    <span class="stat-val" id="statCold">-</span>
+    <span class="stat-label">💀 급락 시그널</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-val" id="statAvg">-</span>
+    <span class="stat-label">평균 감성점수</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-val" id="statNextUpdate">-</span>
+    <span class="stat-label">다음 업데이트</span>
+  </div>
+</section>
+
+<!-- ── 메인 그리드 : 4컬럼 × 50행 ──────────────────────────── -->
+<main class="main-content">
+  <div class="grid-header">
+    <div class="col-header">종목정보</div>
+    <div class="col-header">감성점수</div>
+    <div class="col-header">추세/등급</div>
+    <div class="col-header">공유</div>
+  </div>
+
+  <!-- 로딩 스피너 -->
+  <div id="loadingState" class="loading-state">
+    <div class="spinner"></div>
+    <p>코스피200 감성 데이터 로딩 중...</p>
+  </div>
+
+  <!-- 종목 리스트 컨테이너 -->
+  <div id="stockGrid" class="stock-grid" style="display:none;"></div>
+
+  <!-- 더 보기 / 페이지네이션 -->
+  <div class="pagination" id="pagination" style="display:none;">
+    <button id="btnPrev" class="page-btn" disabled>◀ 이전</button>
+    <span id="pageInfo" class="page-info"></span>
+    <button id="btnNext" class="page-btn">다음 ▶</button>
+  </div>
+</main>
+
+<!-- ── AdSense 하단 배너 ──────────────────────────────────────── -->
+{% if adsense_client_id %}
+<div class="ad-wrap ad-bottom">
+  <ins class="adsbygoogle" style="display:block" data-ad-client="{{ adsense_client_id }}"
+       data-ad-slot="0987654321" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+{% endif %}
+
+<!-- ── 종목 상세 모달 ─────────────────────────────────────────── -->
+<div id="stockModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal-backdrop" id="modalBackdrop"></div>
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <span id="modalEmoji" class="modal-emoji"></span>
+        <span id="modalName" class="modal-title"></span>
+        <span id="modalCode" class="modal-code"></span>
+      </div>
+      <button class="modal-close" id="modalClose" aria-label="닫기">✕</button>
+    </div>
+
+    <!-- 탭 -->
+    <div class="modal-tabs">
+      <button class="tab-btn active" data-tab="overview">개요</button>
+      <button class="tab-btn" data-tab="comments">댓글 분석</button>
+      <button class="tab-btn" data-tab="chart">점수 추이</button>
+      <button class="tab-btn" data-tab="dart">공시자료</button>
+    </div>
+
+    <!-- 탭 콘텐츠 -->
+    <div class="tab-content active" id="tab-overview">
+      <div class="score-display">
+        <div class="score-big" id="modalScore">-</div>
+        <div class="score-sub">감성 점수</div>
+      </div>
+      <div class="overview-stats">
+        <div class="ov-item">
+          <span class="ov-label">등급</span>
+          <span class="ov-val" id="modalGrade">-</span>
+        </div>
+        <div class="ov-item">
+          <span class="ov-label">긍정댓글</span>
+          <span class="ov-val positive" id="modalPos">-</span>
+        </div>
+        <div class="ov-item">
+          <span class="ov-label">부정댓글</span>
+          <span class="ov-val negative" id="modalNeg">-</span>
+        </div>
+        <div class="ov-item">
+          <span class="ov-label">중립댓글</span>
+          <span class="ov-val" id="modalNeu">-</span>
+        </div>
+        <div class="ov-item">
+          <span class="ov-label">전체 수집</span>
+          <span class="ov-val" id="modalTotal">-</span>
+        </div>
+        <div class="ov-item">
+          <span class="ov-label">점수변화</span>
+          <span class="ov-val" id="modalChange">-</span>
+        </div>
+      </div>
+      <!-- 미니 바 차트 -->
+      <div class="mini-bar-wrap">
+        <div class="mini-bar-label">긍정</div>
+        <div class="mini-bar"><div class="mini-bar-fill positive" id="barPos"></div></div>
+        <div class="mini-bar-label">부정</div>
+        <div class="mini-bar"><div class="mini-bar-fill negative" id="barNeg"></div></div>
+        <div class="mini-bar-label">중립</div>
+        <div class="mini-bar"><div class="mini-bar-fill neutral" id="barNeu"></div></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-comments">
+      <div id="commentList" class="comment-list"></div>
+    </div>
+
+    <div class="tab-content" id="tab-chart">
+      <canvas id="scoreChart" height="220"></canvas>
+    </div>
+
+    <div class="tab-content" id="tab-dart">
+      <div class="dart-info">
+        <p>📋 DART 전자공시 최근 공시자료</p>
+        <iframe id="dartFrame" src="about:blank" class="dart-frame" title="DART 공시자료"></iframe>
+        <a id="dartLink" href="#" target="_blank" class="dart-external-btn">DART에서 직접 보기 ↗</a>
+      </div>
+    </div>
+
+    <!-- 모달 하단 공유 버튼 -->
+    <div class="modal-footer">
+      <button class="share-btn kakao-btn" id="modalKakaoShare">
+        <span>💬</span> 카카오톡 공유
+      </button>
+      <button class="share-btn link-btn" id="modalLinkShare">
+        <span>🔗</span> 링크 복사
+      </button>
+      <button class="share-btn naver-btn" id="modalNaverLink">
+        <span>📊</span> 네이버 토론방
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 푸터 ─────────────────────────────────────────────────── -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p class="footer-disclaimer">
+      ⚠️ 본 서비스는 SNS 및 커뮤니티 댓글의 감성분석 결과이며, <strong>투자 권유가 아닙니다.</strong>
+      투자에 따른 손실은 투자자 본인에게 귀속됩니다.
+    </p>
+    <p class="footer-info">
+      데이터 출처: 네이버 종목토론방 | 업데이트 주기: 4시간 | © 2026 곡소리매매법
+    </p>
+    <div class="footer-lang">
+      <a href="/" class="lang-btn active">한국어</a>
+      <a href="/en" class="lang-btn">English</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const KAKAO_JS_KEY = "{{ kakao_js_key }}";
+</script>
+<script src="/static/js/main.js"></script>
+</body>
+</html>
